@@ -170,7 +170,7 @@ header{padding:6px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px
 (function(){
 "use strict";
 /* ---------- 状态 ---------- */
-var API = "http://" + location.hostname + ":8080";
+var API = location.origin;
 var connected = false;
 var pollTimer = null;
 

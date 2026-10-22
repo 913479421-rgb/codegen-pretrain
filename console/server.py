@@ -22,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # codegen-pretrain/
+CONSOLE_DIR = os.path.join(ROOT, "console")
 os.chdir(ROOT)
 
 # 动作 → (命令模板, 是否需要语料/checkpoint)
@@ -134,10 +135,38 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self._cors()
 
+    def _serve_static(self, path):
+        """托管 console/ 静态前端，单端口同时服务页面与 API。"""
+        if path in ("/", ""):
+            path = "/模型训练控制台.html"
+        rel = path.lstrip("/")
+        full = os.path.normpath(os.path.join(CONSOLE_DIR, rel))
+        if not full.startswith(CONSOLE_DIR):
+            self._json({"error": "forbidden"}, 403)
+            return
+        if os.path.isdir(full):
+            full = os.path.join(full, "模型训练控制台.html")
+        if not os.path.exists(full):
+            self._json({"error": "not found"}, 404)
+            return
+        ctype = ("text/html; charset=utf-8" if full.endswith(".html")
+                 else "text/css; charset=utf-8" if full.endswith(".css")
+                 else "application/octet-stream")
+        with open(full, "rb") as f:
+            data = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def do_GET(self):
         global _next_id
         p = urlparse(self.path)
         q = parse_qs(p.query)
+        if not p.path.startswith("/api/"):
+            self._serve_static(p.path)
+            return
         if p.path == "/api/status":
             self._json(_project_status())
         elif p.path == "/api/actions":
