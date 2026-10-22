@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 训练产物（大文件，不入库；语料与 checkpoint 由用户本地生成）
+data/code_train.bin
+data/code_eval.bin
+data/*.npy
+data/vocab.json
+data/meta.json
+data/stream/
+data/stream_index.json
+checkpoints/
+*.pt
+
+# 控制台自检截图（非交付物）
+console/_shots/
+
+# 系统
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型训练控制台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%230E1116'/%3E%3Cpath d='M6 17V7l6 6 6-6v10' fill='none' stroke='%23F5A623' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap">
+<style>
+:root{
+  --bg:#0E1116; --panel:#151A22; --panel2:#1A212B; --line:#242C37;
+  --ink:#E6E9EE; --muted:#8A93A0; --accent:#F5A623; --cyan:#4DD0E1;
+  --ok:#3DDC97; --warn:#F2645A; --radius:12px;
+  --mono:'IBM Plex Mono','Menlo','Consolas',monospace;
+  --sans:'Noto Sans SC',-apple-system,'Segoe UI',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+.mono{font-family:var(--mono)}
+/* ===== 布局 ===== */
+.shell{max-width:1080px;margin:0 auto;padding:16px 16px 40px}
+header{padding:6px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand svg{flex:0 0 auto}
+.brand h1{font-size:20px;font-weight:700;letter-spacing:.3px}
+.brand .sub{color:var(--muted);font-size:12.5px;font-family:var(--mono)}
+.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.dot-on{background:var(--ok);box-shadow:0 0 8px var(--ok)}
+.dot-off{background:var(--warn)}
+/* ===== 状态卡 ===== */
+.grid-kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:22px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px}
+.kpi .lab{color:var(--muted);font-size:12px;font-family:var(--mono);text-transform:none}
+.kpi .val{font-size:18px;font-weight:600;margin-top:4px;font-family:var(--mono)}
+.kpi .val small{font-size:11px;color:var(--muted);font-weight:400}
+.acc .val{color:var(--accent)} .cy .val{color:var(--cyan)} .ok .val{color:var(--ok)} .wrn .val{color:var(--warn)}
+/* ===== 区块标题 ===== */
+.sec-t{display:flex;align-items:center;gap:8px;margin:24px 0 12px}
+.sec-t .n{font-family:var(--mono);color:var(--accent);font-size:13px;font-weight:600}
+.sec-t h2{font-size:15px;font-weight:700}
+.sec-t .rule{flex:1;height:1px;background:var(--line)}
+/* ===== 引擎清单 ===== */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;
+  padding:6px 12px;font-size:12px;font-family:var(--mono);color:var(--ink)}
+.chip b{color:var(--accent);font-weight:600}
+/* ===== 动作台 ===== */
+.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.act{display:flex;flex-direction:column;gap:6px;background:var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);padding:14px;text-align:left;
+  cursor:pointer;transition:border-color .15s,transform .1s;color:var(--ink);min-height:78px}
+.act:hover{border-color:var(--accent);transform:translateY(-1px)}
+.act:active{transform:translateY(0)}
+.act .a-n{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px}
+.act .a-n svg{color:var(--accent);flex:0 0 auto}
+.act .a-d{color:var(--muted);font-size:12px;font-family:var(--mono)}
+.act .a-st{font-size:11px;font-family:var(--mono);margin-top:auto}
+.st-idle{color:var(--muted)} .st-run{color:var(--cyan)} .st-done{color:var(--ok)}
+.act.running{border-color:var(--cyan)}
+/* ===== 图表 ===== */
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:14px}
+#lossChart{width:100%;height:280px}
+.chart-note{color:var(--muted);font-size:11px;font-family:var(--mono);margin-top:8px}
+/* ===== 日志终端 ===== */
+.term{background:#0A0D12;border:1px solid var(--line);border-radius:var(--radius);
+  padding:12px;height:260px;overflow-y:auto;font-family:var(--mono);font-size:12px}
+.term .l{color:var(--muted);white-space:pre-wrap;word-break:break-all;line-height:1.6}
+.term .l.cmd{color:var(--cyan)} .term .l.done{color:var(--ok)} .term .l.fail{color:var(--warn)}
+.term .l.boost{color:var(--accent)}
+/* ===== toast ===== */
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+  padding:10px 16px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:50;
+  max-width:88vw;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+/* ===== 窄屏优先：桌面在 min-width 增强 ===== */
+@media (min-width:720px){
+  .grid-kpi{grid-template-columns:repeat(4,1fr)}
+  .actions{grid-template-columns:repeat(3,1fr)}
+  .shell{padding:24px 28px 48px}
+  header .sub{font-size:13.5px}
+  #lossChart{height:320px}
+  .term{height:300px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect width="24" height="24" rx="6" fill="#151A22" stroke="#242C37"/>
+      <path d="M6 17V7l6 6 6-6v10" fill="none" stroke="#F5A623" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <h1>模型训练控制台</h1>
+      <div class="sub"><span id="dot" class="status-dot dot-off"></span><span id="conn">后端未连接</span> · codegen-pretrain</div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== 状态 ===== -->
+<section>
+  <div class="grid-kpi">
+    <div class="kpi"><div class="lab">GPU</div><div class="val cy" id="k-gpu">—</div></div>
+    <div class="kpi"><div class="lab">词表</div><div class="val acc" id="k-vocab">—</div></div>
+    <div class="kpi"><div class="lab">语料 token</div><div class="val ok" id="k-tokens">0</div></div>
+    <div class="kpi"><div class="lab">语料文件</div><div class="val" id="k-files">0</div></div>
+  </div>
+  <div class="kpi" style="margin-bottom:6px"><div class="lab">已保存 checkpoint</div><div class="val" id="k-ckpt" style="font-size:13px">无</div></div>
+</section>
+
+<!-- ===== 引擎清单 ===== -->
+<section>
+  <div class="sec-t"><span class="n">01</span><h2>引擎清单</h2><div class="rule"></div></div>
+  <div class="chips">
+    <span class="chip">自研 <b>Transformer</b></span>
+    <span class="chip">自研 <b>BPE</b></span>
+    <span class="chip">RoPE · SwiGLU · RMSNorm · GQA</span>
+    <span class="chip">FlashAttention <b>SDPA</b></span>
+    <span class="chip">torch.compile</span>
+    <span class="chip">DeepSpeed <b>ZeRO</b></span>
+    <span class="chip">投机解码 <b>2-3×</b></span>
+    <span class="chip">INT8/INT4 量化</span>
+    <span class="chip">防幻觉闸门</span>
+    <span class="chip">The Stack v3 语料</span>
+  </div>
+</section>
+
+<!-- ===== 动作台 ===== -->
+<section>
+  <div class="sec-t"><span class="n">02</span><h2>动作台</h2><div class="rule"></div></div>
+  <div class="actions">
+    <button class="act" data-a="prepare"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>初始化语料与词表</span><span class="a-d">prepare_data.py</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="train"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>训练（small 档）</span><span class="a-d">train.py --config small</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="train_large"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>训练（large 档）</span><span class="a-d">train.py --config large</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="continuous"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>持续训练</span><span class="a-d">continuous_train.py</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="generate"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-10 4 6 3-4 3 8"/><path d="M3 21h18"/></svg>生成代码</span><span class="a-d">generate.py --use-ema</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="eval"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>评测模型</span><span class="a-d">eval.py --use-ema</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="distill"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a3 3 0 0 0-3 3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h3"/><path d="M12 3a3 3 0 0 1 3 3 3 3 0 0 1 3 3 3 3 0 0 1-3 3h-3"/><path d="M12 9v12"/></svg>蒸馏数据</span><span class="a-d">assistant_models --distill</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="quant"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M8 12h8M11 9v6"/></svg>量化导出</span><span class="a-d">export_quantized --bits 8</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="bench"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>基准数据下载</span><span class="a-d">HumanEval 评测数据</span><span class="a-st st-idle">就绪</span></button>
+  </div>
+</section>
+
+<!-- ===== 训练曲线 ===== -->
+<section>
+  <div class="sec-t"><span class="n">03</span><h2>训练损失曲线</h2><div class="rule"></div></div>
+  <div class="chart-card">
+    <div id="lossChart"></div>
+    <div class="chart-note">训练中每 20 步记录一次 loss。连接后端后展示实时曲线；未连接时显示示例曲线。</div>
+  </div>
+</section>
+
+<!-- ===== 日志终端 ===== -->
+<section>
+  <div class="sec-t"><span class="n">04</span><h2>运行日志</h2><div class="rule"></div></div>
+  <div class="term" id="term"><div class="l">—— 控制台就绪。连接后端后这里会流式显示训练日志。——</div></div>
+</section>
+
+</div>
+
+<div id="toast"></div>
+
+<script src="https://fastly.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<script>
+(function(){
+"use strict";
+/* ---------- 状态 ---------- */
+var API = "http://" + location.hostname + ":8080";
+var connected = false;
+var pollTimer = null;
+
+/* ---------- DOM 工具 ---------- */
+function $(s){ return document.querySelector(s); }
+function el(id){ return document.getElementById(id); }
+function toast(msg){
+  var t = el("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(function(){ t.classList.remove("show"); }, 3200);
+}
+
+/* ---------- 后端通信 ---------- */
+function api(path, opts){
+  return fetch(API + path, opts).then(function(r){ return r.json(); });
+}
+function runAction(key, btn){
+  setBtnState(key, "running");
+  return api("/api/action", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({action: key})
+  }).then(function(res){
+    if (res.error) { toast("后端返回：" + res.error); setBtnState(key, "idle"); }
+    else { toast("已启动：" + res.cmd); }
+  }).catch(function(){
+    setBtnState(key, "idle");
+    toast("后端未启动。请先运行：python console/server.py");
+  });
+}
+
+/* ---------- 按钮状态 ---------- */
+var ACTIONS = ["prepare","train","train_large","continuous","generate","eval","distill","quant","bench"];
+function btnEl(key){ var b = document.querySelector('[data-a="' + key + '"]'); return b; }
+function setBtnState(key, st){
+  var b = btnEl(key); if (!b) return;
+  var s = b.querySelector(".a-st");
+  b.classList.remove("running");
+  if (st === "running"){ b.classList.add("running"); s.textContent = "运行中…"; s.className = "a-st st-run"; }
+  else { s.textContent = "就绪"; s.className = "a-st st-idle"; }
+}
+
+/* ---------- 状态渲染 ---------- */
+function renderStatus(d){
+  el("k-gpu").textContent = d.gpu || "—";
+  el("k-vocab").textContent = d.vocab === "—" ? "—" : d.vocab;
+  el("k-tokens").textContent = (d.train_tokens || 0).toLocaleString();
+  el("k-files").textContent = d.stream_files || 0;
+  var ck = d.checkpoints && d.checkpoints.length ? d.checkpoints.slice(-3).join(" · ") : "暂无";
+  el("k-ckpt").textContent = ck;
+}
+function setConn(on){
+  connected = on;
+  var dot = el("dot"), c = el("conn");
+  dot.className = "status-dot " + (on ? "dot-on" : "dot-off");
+  c.textContent = on ? "后端已连接" : "后端未连接";
+}
+
+/* ---------- 日志 ---------- */
+function appendLog(text){
+  var term = el("term"); var d = document.createElement("div"); d.className = "l";
+  if (text.indexOf("▶") === 0) d.className += " cmd";
+  else if (text.indexOf("■") === 0) d.className += " done";
+  else if (text.indexOf("✗") === 0) d.className += " fail";
+  else if (text.indexOf("step") === 0) d.className += " boost";
+  d.textContent = text; term.appendChild(d);
+  term.scrollTop = term.scrollHeight;
+}
+function fetchLogs(){
+  if (!connected) return;
+  api("/api/logs?n=120").then(function(r){
+    el("term").innerHTML = "";
+    (r.logs || []).forEach(appendLog);
+    if (!r.logs.length) appendLog("—— 暂无运行日志 ——");
+  }).catch(function(){});
+}
+
+/* ---------- 损失曲线 ---------- */
+var chart = null;
+var demoPoints = [[0,6.99],[300,5.6],[600,4.4],[1000,3.2],[1600,2.1],[2400,1.2],[3600,0.7],[5000,0.42],[8000,0.25]];
+function drawChart(points, isDemo){
+  if (!window.echarts) return;
+  if (!chart) chart = echarts.init(el("lossChart"));
+  chart.setOption({
+    grid:{left:44,right:16,top:18,bottom:28},
+    tooltip:{trigger:"axis"},
+    xAxis:{type:"value", name:"step", axisLine:{lineStyle:{color:"#242C37"}},
+      axisLabel:{color:"#8A93A0",fontFamily:"IBM Plex Mono"}},
+    yAxis:{type:"value", name:"loss", axisLine:{lineStyle:{color:"#242C37"}},
+      axisLabel:{color:"#8A93A0",fontFamily:"IBM Plex Mono"}},
+    series:[{name:"loss", type:"line", smooth:true, showSymbol:false,
+      data:points, lineStyle:{color:"#F5A623",width:2},
+      areaStyle:{color:{type:"linear",x:0,y:0,x2:0,y2:1,
+        colorStops:[{offset:0,color:"rgba(245,166,35,.18)"},{offset:1,color:"rgba(245,166,35,0)"}]}},
+      itemStyle:{color:"#F5A623"}}]
+  });
+}
+function fetchLoss(){
+  if (!connected){ if(!chart) drawChart(demoPoints, true); return; }
+  api("/api/loss").then(function(r){
+    if (r.points && r.points.length) drawChart(r.points, false);
+    else if (chart) drawChart(demoPoints, true);
+  }).catch(function(){ if(!chart) drawChart(demoPoints, true); });
+}
+
+/* ---------- 轮询 ---------- */
+function pollStatus(){
+  api("/api/status").then(function(d){
+    setConn(true); renderStatus(d); fetchLogs(); fetchLoss();
+  }).catch(function(){
+    setConn(false); renderStatus({gpu:"—",vocab:"—",train_tokens:0,stream_files:0,checkpoints:[]});
+  });
+}
+
+/* ---------- 绑定动作 ---------- */
+document.querySelectorAll(".act").forEach(function(b){
+  b.addEventListener("click", function(){
+    var key = b.getAttribute("data-a");
+    if (!connected){
+      toast("后端未启动。请先运行：python console/server.py 再执行此动作。");
+      return;
+    }
+    runAction(key, b);
+  });
+});
+
+/* ---------- 启动 ---------- */
+window.addEventListener("resize", function(){ if (chart) chart.resize(); });
+pollStatus();
+pollTimer = setInterval(pollStatus, 4000);
+})();
+</script>
+</body>
+</html>
