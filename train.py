@@ -87,7 +87,7 @@ def ema_update(ema_model, model, decay):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--config", default="small", choices=["tiny", "small", "medium", "large"])
+    ap.add_argument("--config", default="small", choices=["tiny", "small", "medium", "large", "10b"])
     ap.add_argument("--steps", type=int, default=0)
     ap.add_argument("--resume", default="")
     ap.add_argument("--device", default="auto")

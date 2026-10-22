@@ -207,3 +207,13 @@ step 200/20000 | loss 0.9371 | lr 3.00e-04 | 137s      # loss 持续下降 = 在
 - **想更强**：加大语料（几 GB The Stack）+ 升档 large + DeepSpeed 多卡 + 训几万步 + 持续训练长期挂着。
 
 **卡在哪一步，把报错发我。**
+
+### 10b 档（10GB 参数）
+`--config 10b`：**约 51.3 亿参数，bf16 ≈ 10.3 GB**。
+- 规模：n_embd=4096 / 20 层 / 32 头(GQA 8 KV头) / 词表 32000 / 上下文 2048
+- 前置：语料需用 `--vocab-size 32000` 重新初始化词表
+- 硬件：需多卡 GPU（>48GB 单卡或用 DeepSpeed ZeRO）；纯 CPU 无法训练
+```bash
+python prepare_data.py --local-dir data/stream --vocab-size 32000
+deepspeed --num_gpus 8 train.py --config 10b --ds-config config/ds_zero3.json --steps 120000
+```

@@ -69,6 +69,12 @@ CONFIGS = {
                    block_size=512, batch_size=8, max_steps=50000, lr=2e-3),
     "large": dict(vocab_size=16000, n_layer=24, n_head=16, n_kv_head=8, n_embd=1024,
                   block_size=1024, batch_size=4, max_steps=120000, lr=1.5e-3),
+    # 10b 档：~50亿参数，bf16 约 10GB（用户点名的"10GB参数"）
+    # 需多卡 GPU + 大语料（词表32000需 --vocab-size 32000 重新初始化）；单卡需 >48GB 显存或用 ZeRO
+    "10b": dict(vocab_size=32000, n_layer=20, n_head=32, n_kv_head=8, n_embd=4096,
+                block_size=2048, batch_size=4, grad_accum=8, dropout=0.0,
+                max_steps=120000, lr=1.2e-4, warmup_steps=2000, use_compile=True,
+                save_every=2000),
 }
 
 
