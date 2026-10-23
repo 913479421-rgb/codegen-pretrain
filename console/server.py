@@ -36,6 +36,10 @@ ACTIONS = {
     "distill": "python assistant_models.py --model qwen-coder --distill --num 100 --out data/stream",
     "quant":   "python export_quantized.py --checkpoint checkpoints/final.pt --bits 8",
     "bench":   "python eval_benchmark.py --download --dataset humaneval",
+    # 生产级 10b：The Stack 几GB + 10b档 + DeepSpeed多卡 + 持续训练，随server常驻后台运行
+    "prod_10b": "bash run_production_10b.sh",
+    "collect": "python collect_data.py --source stack --max-mb 2000 --out-dir data/stream",
+    "check":   "bash 00_check_env.sh",
 }
 
 # 当前运行状态

@@ -143,6 +143,9 @@ header{padding:6px 0 18px;border-bottom:1px solid var(--line);margin-bottom:20px
     <button class="act" data-a="distill"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a3 3 0 0 0-3 3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h3"/><path d="M12 3a3 3 0 0 1 3 3 3 3 0 0 1 3 3 3 3 0 0 1-3 3h-3"/><path d="M12 9v12"/></svg>蒸馏数据</span><span class="a-d">assistant_models --distill</span><span class="a-st st-idle">就绪</span></button>
     <button class="act" data-a="quant"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="10" rx="2"/><path d="M8 12h8M11 9v6"/></svg>量化导出</span><span class="a-d">export_quantized --bits 8</span><span class="a-st st-idle">就绪</span></button>
     <button class="act" data-a="bench"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>基准数据下载</span><span class="a-d">HumanEval 评测数据</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="prod_10b"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"/></svg>生产训练 10b</span><span class="a-d">The Stack+10b+多卡+持续训练</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="collect"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 21h16"/></svg>采集语料</span><span class="a-d">collect_data The Stack</span><span class="a-st st-idle">就绪</span></button>
+    <button class="act" data-a="check"><span class="a-n"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>环境检查</span><span class="a-d">00_check_env.sh</span><span class="a-st st-idle">就绪</span></button>
   </div>
 </section>
 
@@ -202,7 +205,7 @@ function runAction(key, btn){
 }
 
 /* ---------- 按钮状态 ---------- */
-var ACTIONS = ["prepare","train","train_large","continuous","generate","eval","distill","quant","bench"];
+var ACTIONS = ["prepare","train","train_large","continuous","generate","eval","distill","quant","bench","prod_10b","collect","check"];
 function btnEl(key){ var b = document.querySelector('[data-a="' + key + '"]'); return b; }
 function setBtnState(key, st){
   var b = btnEl(key); if (!b) return;
