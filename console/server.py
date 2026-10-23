@@ -212,8 +212,9 @@ class Handler(BaseHTTPRequestHandler):
 def main():
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--port", type=int, default=8080)
-    ap.add_argument("--host", default="127.0.0.1")
+    # PaaS(Render/Railway/Fly)会注入 PORT 环境变量；--port 优先
+    ap.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8080")))
+    ap.add_argument("--host", default="0.0.0.0")
     args = ap.parse_args()
     print(f"[console] 控制台后端运行在 http://{args.host}:{args.port}")
     print(f"[console] 浏览器打开 console/模型训练控制台.html")
